@@ -55,7 +55,8 @@
     "analysis": "Analysis",
     "realtime": "Realtime",
     "check": "Check",
-    "migrate": "Import/Export"
+    "migrate": "Import/Export",
+    "apikeys": "API Keys"
   },
   "sidebar": {
     "subtitle": "Link Shortener",

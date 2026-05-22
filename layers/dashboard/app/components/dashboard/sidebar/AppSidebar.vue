@@ -43,6 +43,12 @@ const settingsItems = computed<NavItem[]>(() => [
     icon: DASHBOARD_ROUTES.migrate.icon,
     isActive: isActive('migrate'),
   },
+  {
+    title: 'nav.apikeys',
+    url: '/dashboard/apikeys',
+    icon: DASHBOARD_ROUTES.apikeys.icon,
+    isActive: isActive('apikeys'),
+  },
 ])
 </script>
 

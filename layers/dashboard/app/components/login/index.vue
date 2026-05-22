@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { AlertCircle } from 'lucide-vue-next'
+import { AlertCircle, Github } from 'lucide-vue-next'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { z } from 'zod'
 
@@ -9,12 +10,13 @@ const { setToken, removeToken } = useAuthToken()
 
 const password = ref('')
 const error = ref('')
+const isLoading = ref(false)
 
 const LoginSchema = z.object({
   password: z.string().min(1),
 })
 
-async function handleSubmit() {
+async function handlePasswordSubmit() {
   error.value = ''
   const result = LoginSchema.safeParse({ password: password.value })
 
@@ -39,6 +41,51 @@ async function handleSubmit() {
     })
   }
 }
+
+function handleGitHubLogin() {
+  isLoading.value = true
+
+  const width = 600
+  const height = 600
+  const left = (window.innerWidth - width) / 2
+  const top = (window.innerHeight - height) / 2
+
+  const popup = window.open(
+    '/api/auth/github',
+    'github-oauth',
+    `width=${width},height=${height},left=${left},top=${top},resizable=yes`,
+  )
+
+  if (!popup) {
+    toast.error('Please allow popups for this site')
+    isLoading.value = false
+    return
+  }
+
+  const handleMessage = (event: MessageEvent) => {
+    if (event.data?.type === 'GITHUB_LOGIN_SUCCESS') {
+      setToken(event.data.token)
+      popup.close()
+      window.removeEventListener('message', handleMessage)
+      navigateTo('/dashboard')
+    }
+  }
+
+  window.addEventListener('message', handleMessage)
+
+  popup.onclose = () => {
+    window.removeEventListener('message', handleMessage)
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  isLoading.value = false
+})
+
+onUnmounted(() => {
+  isLoading.value = false
+})
 </script>
 
 <template>
@@ -52,8 +99,7 @@ async function handleSubmit() {
       </CardDescription>
     </CardHeader>
     <CardContent class="grid gap-4">
-      <form class="space-y-6" @submit.prevent="handleSubmit">
-        <!-- Hidden username field for password managers -->
+      <form class="space-y-6" @submit.prevent="handlePasswordSubmit">
         <Input
           type="text"
           name="username"
@@ -93,6 +139,26 @@ async function handleSubmit() {
 
         <Button class="w-full" type="submit">
           {{ $t('login.submit') }}
+        </Button>
+
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-muted" />
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="bg-background px-2 text-muted-foreground">or</span>
+          </div>
+        </div>
+
+        <Button
+          class="w-full"
+          variant="outline"
+          type="button"
+          :disabled="isLoading"
+          @click="handleGitHubLogin"
+        >
+          <Github class="mr-2 h-4 w-4" />
+          {{ isLoading ? 'Loading...' : 'Login with GitHub' }}
         </Button>
       </form>
     </CardContent>

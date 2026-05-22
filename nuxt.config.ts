@@ -40,6 +40,10 @@ export default defineNuxtConfig({
     notFoundRedirect: '',
     safeBrowsingDoh: '', // Set to DoH URL to enable auto-detection, e.g. https://family.cloudflare-dns.com/dns-query
     loginPassword: process.env.NUXT_LOGIN_PASSWORD || '', // Password for local development login
+    jwtSecret: process.env.NUXT_JWT_SECRET || crypto.randomUUID(), // Secret for JWT signing
+    githubClientId: process.env.NUXT_GITHUB_CLIENT_ID || '', // GitHub OAuth Client ID
+    githubClientSecret: process.env.NUXT_GITHUB_CLIENT_SECRET || '', // GitHub OAuth Client Secret
+    githubRedirectUri: process.env.NUXT_GITHUB_REDIRECT_URI || '', // GitHub OAuth Redirect URI
     public: {
       previewMode: '',
       slugDefaultLength: '6',
