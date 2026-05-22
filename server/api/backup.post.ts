@@ -1,4 +1,4 @@
-import { isLocalMode } from '../utils/local-mode'
+import { isCloudflareEnv } from '../utils/env'
 
 defineRouteMeta({
   openAPI: {
@@ -8,7 +8,7 @@ defineRouteMeta({
 })
 
 export default eventHandler(async (event) => {
-  if (isLocalMode(event)) {
+  if (!isCloudflareEnv()) {
     throw createError({
       status: 501,
       statusText: 'Backup not available in local development mode',

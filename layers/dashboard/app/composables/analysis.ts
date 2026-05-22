@@ -1,7 +1,7 @@
-import { defineStore, useI18n } from '#imports'
 import { useUrlSearchParams } from '@vueuse/core'
 import { safeDestr } from 'destr'
 import { ref, watch } from 'vue'
+import { defineStore, useI18n } from '#imports'
 import { computeDateRange } from '@/utils/time'
 
 export const useDashboardAnalysisStore = defineStore('dashboard-analysis', () => {

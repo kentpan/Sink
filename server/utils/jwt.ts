@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer'
+
 interface JwtPayload {
   sub?: string
   exp?: number
@@ -5,26 +7,17 @@ interface JwtPayload {
   [key: string]: unknown
 }
 
-const isCloudflare = process.env.NODE_ENV === 'production' || process.env.NUXT_USE_CLOUDFLARE === 'true'
 const BASE64URL_REGEX = /[+/=]/g
 
 async function getCrypto() {
-  if (isCloudflare) {
+  if (typeof globalThis.crypto !== 'undefined') {
     return { crypto: globalThis.crypto }
   }
   const nodeCrypto = await import('node:crypto')
   return { crypto: nodeCrypto.default }
 }
 
-async function getBuffer() {
-  const { Buffer } = await import('node:buffer')
-  return { Buffer }
-}
-
 export async function generateJwt(payload: JwtPayload, secret: string, expiresInMinutes: number = 60): Promise<string> {
-  const { Buffer } = await getBuffer()
-  const { crypto } = await getCrypto()
-
   const now = Math.floor(Date.now() / 1000)
   const exp = now + (expiresInMinutes * 60)
 
@@ -34,20 +27,20 @@ export async function generateJwt(payload: JwtPayload, secret: string, expiresIn
   }
 
   async function sign(data: string, secretStr: string): Promise<string> {
-    if (isCloudflare) {
+    if (typeof globalThis.crypto !== 'undefined' && typeof crypto.subtle !== 'undefined') {
       const encoder = new TextEncoder()
       const keyData = encoder.encode(secretStr)
-      const key = await (crypto.subtle.importKey as (
-        format: 'raw',
-        keyData: ArrayBuffer,
-        algorithm: { name: 'HMAC', hash: 'SHA-256' },
-        extractable: boolean,
-        keyUsages: ['sign'],
-      ) => Promise<CryptoKey>)('raw', keyData.buffer as ArrayBuffer, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
-      const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(data))
+      const key = await crypto.subtle.importKey(
+        'raw',
+        keyData.buffer,
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign'],
+      )
+      const sig = await crypto.subtle.sign('HMAC', await key, encoder.encode(data))
       return Buffer.from(sig).toString('base64url')
     }
-    const nodeCrypto = crypto as typeof import('node:crypto')
+    const nodeCrypto = await import('node:crypto')
     return nodeCrypto.createHmac('sha256', secretStr).update(data).digest('base64url')
   }
 
@@ -60,7 +53,6 @@ export async function generateJwt(payload: JwtPayload, secret: string, expiresIn
 
 export async function verifyJwt(token: string, secret: string): Promise<JwtPayload | null> {
   try {
-    const { Buffer } = await getBuffer()
     const { crypto } = await getCrypto()
 
     const [header, payload, signature] = token.split('.')
@@ -74,19 +66,19 @@ export async function verifyJwt(token: string, secret: string): Promise<JwtPaylo
     }
 
     async function sign(data: string, secretStr: string): Promise<string> {
-      if (isCloudflare) {
+      if (typeof globalThis.crypto !== 'undefined' && typeof crypto.subtle !== 'undefined') {
         const encoder = new TextEncoder()
-        const key = await (crypto.subtle.importKey as (
-          format: 'raw',
-          keyData: ArrayBuffer,
-          algorithm: { name: 'HMAC', hash: 'SHA-256' },
-          extractable: boolean,
-          keyUsages: ['sign'],
-        ) => Promise<CryptoKey>)('raw', encoder.encode(secretStr).buffer as ArrayBuffer, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+        const key = await (crypto as Crypto).subtle.importKey(
+          'raw',
+          encoder.encode(secretStr).buffer,
+          { name: 'HMAC', hash: 'SHA-256' },
+          false,
+          ['sign'],
+        )
         const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(data))
         return Buffer.from(sig).toString('base64url')
       }
-      const nodeCrypto = crypto as typeof import('node:crypto')
+      const nodeCrypto = await import('node:crypto')
       return nodeCrypto.createHmac('sha256', secretStr).update(data).digest('base64url')
     }
 
@@ -111,11 +103,11 @@ export async function verifyJwt(token: string, secret: string): Promise<JwtPaylo
 export async function generateApiKey(): Promise<string> {
   const { crypto } = await getCrypto()
 
-  if (isCloudflare) {
-    const array = new Uint8Array(32)
-    ;(crypto as Crypto).getRandomValues(array)
+  if (typeof globalThis.crypto !== 'undefined' && typeof crypto.getRandomValues !== 'undefined') {
+    const array = new Uint8Array(32);
+    (crypto as Crypto).getRandomValues(array)
     return Array.from(array).map(b => String.fromCharCode(b)).join('').replace(BASE64URL_REGEX, c => ({ '+': '-', '/': '_', '=': '' }[c] || c))
   }
-  const nodeCrypto = crypto as typeof import('node:crypto')
+  const nodeCrypto = await import('node:crypto')
   return nodeCrypto.randomBytes(32).toString('base64url')
 }

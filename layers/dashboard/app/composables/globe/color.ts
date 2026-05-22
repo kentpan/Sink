@@ -1,9 +1,8 @@
-// LRU cache for parsed colors (avoids expensive canvas operations on repeated calls)
 const COLOR_CACHE_MAX = 64
 const colorCache = new Map<string, [number, number, number]>()
+const RGBA_REGEX = /rgba?\((\d+),\s*(\d+),\s*(\d+)/
 
 function cacheColor(key: string, value: [number, number, number]): [number, number, number] {
-  // Simple LRU: delete oldest if at capacity
   if (colorCache.size >= COLOR_CACHE_MAX) {
     const firstKey = colorCache.keys().next().value
     if (firstKey !== undefined) {
@@ -15,10 +14,8 @@ function cacheColor(key: string, value: [number, number, number]): [number, numb
 }
 
 export function parseColor(color: string): [number, number, number] {
-  // Check cache first
   const cached = colorCache.get(color)
   if (cached) {
-    // Move to end for LRU behavior
     colorCache.delete(color)
     colorCache.set(color, cached)
     return cached
@@ -44,7 +41,7 @@ export function parseColor(color: string): [number, number, number] {
     ])
   }
 
-  const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
+  const match = color.match(RGBA_REGEX)
   if (match) {
     return cacheColor(color, [
       Number.parseInt(match[1]!) / 255,

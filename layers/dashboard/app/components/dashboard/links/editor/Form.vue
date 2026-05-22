@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { Link, LinkFormData } from '@/types'
-import { LinkSchema, nanoid } from '#shared/schemas/link'
-import { isMaskedLinkPassword } from '#shared/utils/link-password'
 import { useForm } from '@tanstack/vue-form'
 import { Shuffle, Sparkles } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { z } from 'zod'
+import { LinkSchema, nanoid } from '#shared/schemas/link'
+import { isMaskedLinkPassword } from '#shared/utils/link-password'
 
 const props = defineProps<{
   link: Partial<Link>

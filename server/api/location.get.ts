@@ -1,4 +1,4 @@
-import { isLocalMode } from '../utils/local-mode'
+import { isCloudflareEnv } from '../utils/env'
 
 defineRouteMeta({
   openAPI: {
@@ -12,7 +12,7 @@ defineRouteMeta({
 })
 
 export default eventHandler((event) => {
-  if (isLocalMode(event)) {
+  if (!isCloudflareEnv()) {
     return {
       latitude: 31.2304,
       longitude: 121.4737,

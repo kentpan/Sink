@@ -1,5 +1,6 @@
+import type { H3Event } from 'h3'
+import { isCloudflareEnv } from '../../utils/env'
 import { withoutQuery } from '../../utils/link-store'
-import { isCloudflareWorker } from '../../utils/local-mode'
 
 defineRouteMeta({
   openAPI: {
@@ -25,12 +26,12 @@ interface LinkData {
   comment?: string
 }
 
-export default eventHandler(async (event) => {
+export default eventHandler(async (event: H3Event) => {
   const list: Link[] = []
   let finalCursor: string | undefined
 
   try {
-    if (isCloudflareWorker(event)) {
+    if (isCloudflareEnv()) {
       const { cloudflare } = event.context
       const { KV } = cloudflare.env
 
@@ -85,54 +86,42 @@ export default eventHandler(async (event) => {
       }
     }
     else {
-      const { kvGetWithMetadata, kvList, kvPut } = await import('../../lowdb/kv')
-      while (true) {
-        const result = await kvList({
-          prefix: `link:`,
-          limit: 1000,
-          cursor: finalCursor,
-        })
+      const storage = useStorage('kv')
+      const allKeys = await storage.getKeys()
+      const linkKeys = allKeys.filter(k => k.startsWith('link:')).sort()
 
-        finalCursor = result.cursor
-
-        if (Array.isArray(result.keys)) {
-          for (const key of result.keys) {
-            try {
-              if (key.metadata?.url) {
-                list.push({
-                  slug: key.name.replace('link:', ''),
-                  url: key.metadata.url,
-                  comment: key.metadata.comment,
-                })
-              }
-              else {
-                const { metadata, value: link } = await kvGetWithMetadata(key.name, { type: 'json' }) as { metadata: LinkMetadata | null, value: LinkData | null }
-                if (link) {
-                  list.push({
-                    slug: key.name.replace('link:', ''),
-                    url: link.url,
-                    comment: link.comment,
-                  })
-                  await kvPut(key.name, JSON.stringify(link), {
-                    expiration: metadata?.expiration,
-                    metadata: {
-                      ...(metadata ?? {}),
-                      url: withoutQuery(link.url),
-                      comment: link.comment,
-                    },
-                  })
-                }
-              }
-            }
-            catch (err) {
-              console.error(`Error processing key ${key.name}:`, err)
-              continue
-            }
+      for (const keyName of linkKeys) {
+        try {
+          const data = await storage.getItem(keyName)
+          if (!data)
+            continue
+          const entry = JSON.parse(data as string)
+          if (entry.metadata?.url) {
+            list.push({
+              slug: keyName.replace('link:', ''),
+              url: entry.metadata.url,
+              comment: entry.metadata.comment,
+            })
+          }
+          else if (entry.value) {
+            list.push({
+              slug: keyName.replace('link:', ''),
+              url: entry.value.url,
+              comment: entry.value.comment,
+            })
+            await storage.setItem(keyName, JSON.stringify({
+              ...entry,
+              metadata: {
+                ...(entry.metadata ?? {}),
+                url: withoutQuery(entry.value.url),
+                comment: entry.value.comment,
+              },
+            }))
           }
         }
-
-        if (!result.keys || result.list_complete) {
-          break
+        catch (err) {
+          console.error(`Error processing key ${keyName}:`, err)
+          continue
         }
       }
     }

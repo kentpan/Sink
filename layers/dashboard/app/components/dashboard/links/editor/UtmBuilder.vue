@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { LinkSchema } from '#shared/schemas/link'
 import { parseQuery, parseURL, withQuery } from 'ufo'
 import { toast } from 'vue-sonner'
+import { LinkSchema } from '#shared/schemas/link'
 
 interface UtmFormValues {
   source: string

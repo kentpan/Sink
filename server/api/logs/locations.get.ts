@@ -1,6 +1,5 @@
 import type { H3Event } from 'h3'
 import { QuerySchema } from '#shared/schemas/query'
-import { isLocalMode } from '../../utils/local-mode'
 import { mockLocations } from '../../utils/mock-data'
 
 const { select, and, notEq } = SqlBricks
@@ -17,12 +16,9 @@ function query2sql(query: Query, event: H3Event): string {
 }
 
 export default eventHandler(async (event) => {
-  if (isLocalMode(event)) {
-    return mockLocations
-  }
-
   const query = await getValidatedQuery(event, QuerySchema.parse)
   const sql = query2sql(query, event)
 
-  return useWAE(event, sql)
+  const result = await useWAE(event, sql)
+  return result.data && result.data.length > 0 ? result.data : mockLocations
 })

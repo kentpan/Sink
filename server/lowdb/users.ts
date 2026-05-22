@@ -9,45 +9,23 @@ interface User {
   lastLoginAt: number
 }
 
-const isCloudflare = process.env.NODE_ENV === 'production' || process.env.NUXT_USE_CLOUDFLARE === 'true'
-
-let db: any = null
-
-async function getDB() {
-  if (db)
-    return db
-
-  if (isCloudflare) {
-    throw new Error('lowdb is not available in Cloudflare mode')
-  }
-
-  const fs = await import('node:fs')
-  const path = await import('node:path')
-  const { fileURLToPath } = await import('node:url')
-  const { JSONFilePreset } = await import('lowdb/node')
-
-  const __dirname = path.dirname(fileURLToPath(import.meta.url))
-  const dataDir = path.join(__dirname, '../data')
-  const dbPath = path.join(dataDir, 'users.json')
-
-  if (!fs.default.existsSync(dataDir)) {
-    fs.default.mkdirSync(dataDir, { recursive: true })
-  }
-
-  db = await JSONFilePreset(dbPath, { users: [] })
-  return db
-}
-
-async function getCrypto() {
-  if (isCloudflare) {
-    throw new Error('crypto is not available in local mode functions')
-  }
-  return await import('node:crypto')
+function generateUUID(): string {
+  return crypto.randomUUID()
 }
 
 export async function getUserByGithubId(githubId: string): Promise<User | null> {
-  const database = await getDB()
-  return database.data.users.find((u: User) => u.githubId === githubId) || null
+  const storage = useStorage('users')
+  const allKeys = await storage.getKeys()
+
+  for (const key of allKeys) {
+    const data = await storage.getItem(key)
+    if (!data)
+      continue
+    const user = JSON.parse(data as string) as User
+    if (user.githubId === githubId)
+      return user
+  }
+  return null
 }
 
 export async function createOrUpdateUser(githubData: {
@@ -57,9 +35,8 @@ export async function createOrUpdateUser(githubData: {
   email: string
   avatar_url: string
 }): Promise<User> {
-  const database = await getDB()
-  const crypto = await getCrypto()
-  const existingUser = database.data.users.find((u: User) => u.githubId === githubData.id)
+  const storage = useStorage('users')
+  const existingUser = await getUserByGithubId(githubData.id)
 
   if (existingUser) {
     existingUser.githubLogin = githubData.login
@@ -67,29 +44,29 @@ export async function createOrUpdateUser(githubData: {
     existingUser.githubEmail = githubData.email
     existingUser.avatarUrl = githubData.avatar_url
     existingUser.lastLoginAt = Date.now()
-  }
-  else {
-    database.data.users.push({
-      id: crypto.randomUUID(),
-      githubId: githubData.id,
-      githubLogin: githubData.login,
-      githubName: githubData.name,
-      githubEmail: githubData.email,
-      avatarUrl: githubData.avatar_url,
-      createdAt: Date.now(),
-      lastLoginAt: Date.now(),
-    })
+    await storage.setItem(existingUser.id, JSON.stringify(existingUser))
+    return existingUser
   }
 
-  await database.write()
-  const user = existingUser || database.data.users.at(-1)
-  if (!user) {
-    throw new Error('Failed to create or update user')
+  const newUser: User = {
+    id: generateUUID(),
+    githubId: githubData.id,
+    githubLogin: githubData.login,
+    githubName: githubData.name,
+    githubEmail: githubData.email,
+    avatarUrl: githubData.avatar_url,
+    createdAt: Date.now(),
+    lastLoginAt: Date.now(),
   }
-  return user
+
+  await storage.setItem(newUser.id, JSON.stringify(newUser))
+  return newUser
 }
 
 export async function getUserById(id: string): Promise<User | null> {
-  const database = await getDB()
-  return database.data.users.find((u: User) => u.id === id) || null
+  const storage = useStorage('users')
+  const data = await storage.getItem(id)
+  if (!data)
+    return null
+  return JSON.parse(data as string) as User
 }

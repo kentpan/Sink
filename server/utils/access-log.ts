@@ -13,11 +13,7 @@ import {
 } from 'ua-parser-js/extensions'
 import { parseURL } from 'ufo'
 import { getFlag } from '@/utils/flag'
-import { isLocalMode } from './local-mode'
-
-async function getAnalyticsModule() {
-  return await import('../lowdb/analytics')
-}
+import { isCloudflareEnv } from './env'
 
 const NON_DIGIT_REGEX = /\D/g
 
@@ -157,16 +153,7 @@ export async function useAccessLog(event: H3Event) {
     longitude: Number(cf?.longitude || getHeader(event, 'cf-iplongitude') || 0),
   }
 
-  if (isLocalMode(event)) {
-    const { analyticsWriteDataPoint } = await getAnalyticsModule()
-    return analyticsWriteDataPoint({
-      indexes: [link.id || ''],
-      blobs: logs2blobs(accessLogs),
-      doubles: logs2doubles(accessLogs),
-    })
-  }
-
-  if (process.env.NODE_ENV === 'production' && env?.ANALYTICS) {
+  if (isCloudflareEnv() && env?.ANALYTICS) {
     return env.ANALYTICS.writeDataPoint({
       indexes: [link.id],
       blobs: logs2blobs(accessLogs),
@@ -174,6 +161,13 @@ export async function useAccessLog(event: H3Event) {
     })
   }
 
-  console.log('access logs:', accessLogs)
+  const storage = useStorage('analytics')
+  await storage.setItem(`${Date.now()}-${Math.random().toString(36).slice(2)}`, JSON.stringify({
+    indexes: [link.id || ''],
+    blobs: logs2blobs(accessLogs),
+    doubles: logs2doubles(accessLogs),
+    timestamp: Date.now(),
+  }))
+
   return Promise.resolve()
 }

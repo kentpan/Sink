@@ -1,6 +1,6 @@
 import type { CountryColorTiers, GlobeColors, HeatmapColorTiers } from './types'
-import { useColorMode } from '#imports'
 import { computed } from 'vue'
+import { useColorMode } from '#imports'
 
 export type { CountryColorTiers, GlobeColors, HeatmapColorTiers }
 

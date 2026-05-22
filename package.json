@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "nuxt dev",
-    "dev:cf": "NUXT_USE_CLOUDFLARE=true nuxt dev",
+    "dev:cf": "wrangler dev .output/server/index.mjs --assets .output/public --local --persist-to ./wrangler-data",
     "analyze": "nuxt analyze",
     "test": "vitest",
     "build": "NODE_OPTIONS=--max-old-space-size=8192 nuxt build",

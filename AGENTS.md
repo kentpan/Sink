@@ -35,12 +35,12 @@ tests/                  # Vitest tests (Cloudflare Workers pool)
 Use **pnpm** (v10.28.2, enforced via `packageManager`) with **Node.js 22+**.
 
 ```bash
-# Development
-pnpm dev                  # Start dev server (port 7465)
+# Development (Local Mode - uses LowDB for storage, JWT for auth)
+pnpm dev                  # Start dev server (port 4000)
+pnpm dev:cf              # Build and preview with wrangler (Cloudflare mode)
+
+# Build
 pnpm build                # Production build (needs 8GB heap)
-pnpm preview              # Worker preview via wrangler
-pnpm lint:fix             # ESLint with auto-fix (ALWAYS run before commit)
-pnpm types:check          # TypeScript type check
 
 # Testing (Vitest + @cloudflare/vitest-pool-workers)
 pnpm vitest               # Watch mode
@@ -52,6 +52,17 @@ pnpm vitest -t "creates new link"        # Match test name pattern
 pnpm deploy:pages         # Deploy to Cloudflare Pages
 pnpm deploy:worker        # Deploy to Cloudflare Workers
 ```
+
+## Environment Configuration
+
+The project supports seamless switching between local Node.js and Cloudflare Workers environments:
+
+| Variable          | Local Mode         | Cloudflare Mode  |
+| ----------------- | ------------------ | ---------------- |
+| `NUXT_CLOUDFLARE` | `false` (or unset) | `true`           |
+| Storage           | LowDB (JSON files) | Cloudflare KV/R2 |
+| Auth              | JWT + API Keys     | siteToken + JWT  |
+| AI Features       | Fallback only      | Workers AI       |
 
 **Important:** `pnpm install` runs `postinstall` which executes `build:map && nuxt prepare`. Do not skip this.
 

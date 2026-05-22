@@ -1,10 +1,6 @@
 import { z } from 'zod'
+import { createOrUpdateUser } from '../../../lowdb/users'
 import { generateJwt } from '../../../utils/jwt'
-import { isLocalMode } from '../../../utils/local-mode'
-
-async function getUsersModule() {
-  return await import('../../../lowdb/users')
-}
 
 defineRouteMeta({
   openAPI: {
@@ -17,11 +13,16 @@ const QuerySchema = z.object({
   state: z.string(),
 })
 
-export default eventHandler(async (event) => {
-  if (!isLocalMode(event)) {
-    throw createError({ status: 501, statusText: 'GitHub OAuth not available in Cloudflare mode' })
-  }
+interface AccessTokenResponse { access_token?: string }
+interface UserData {
+  id: number
+  login: string
+  name?: string
+  email?: string
+  avatar_url?: string
+}
 
+export default eventHandler(async (event) => {
   const { githubClientId, githubClientSecret, githubRedirectUri, jwtSecret } = useRuntimeConfig(event)
 
   if (!githubClientId || !githubClientSecret) {
@@ -47,7 +48,7 @@ export default eventHandler(async (event) => {
     }),
   })
 
-  const tokenData = await tokenResponse.json()
+  const tokenData: AccessTokenResponse = await tokenResponse.json()
 
   if (!tokenData.access_token) {
     throw createError({ status: 401, statusText: 'Failed to get access token' })
@@ -59,7 +60,7 @@ export default eventHandler(async (event) => {
     },
   })
 
-  const userData = await userResponse.json()
+  const userData: UserData = await userResponse.json()
 
   const emailResponse = await fetch('https://api.github.com/user/emails', {
     headers: {
@@ -67,17 +68,16 @@ export default eventHandler(async (event) => {
     },
   })
 
-  const emails = await emailResponse.json()
+  const emails: { primary: boolean, email: string }[] = await emailResponse.json()
   const primaryEmail = emails.find((e: { primary: boolean }) => e.primary)
   const email = primaryEmail?.email || userData.email || ''
 
-  const { createOrUpdateUser } = await getUsersModule()
   const user = await createOrUpdateUser({
     id: String(userData.id),
     login: userData.login,
     name: userData.name || userData.login,
     email,
-    avatar_url: userData.avatar_url,
+    avatar_url: userData.avatar_url || '',
   })
 
   const expiresInMinutes = 60 * 24

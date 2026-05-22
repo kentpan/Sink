@@ -3,7 +3,7 @@ import type { AiChatResponse } from '../../utils/ai'
 import { destr } from 'destr'
 import { z } from 'zod'
 import { stripCodeFence } from '../../utils/ai'
-import { isLocalMode } from '../../utils/local-mode'
+import { isCloudflareEnv } from '../../utils/env'
 
 defineRouteMeta({
   openAPI: {
@@ -49,7 +49,7 @@ export default eventHandler(async (event) => {
     url: z.string().url(),
   }).parse)).url
 
-  if (isLocalMode(event)) {
+  if (!isCloudflareEnv()) {
     return { slug: fallbackSlug(event, url) }
   }
 

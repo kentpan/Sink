@@ -1,5 +1,5 @@
-import { useAppConfig, useFetch, useI18n } from '#imports'
 import { computed } from 'vue'
+import { useAppConfig, useFetch, useI18n } from '#imports'
 import { formatNumber } from '@/utils/number'
 
 export function useGithubStats() {

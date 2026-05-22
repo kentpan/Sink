@@ -1,6 +1,6 @@
 import type { LinkCheckConfig, LinkCheckResponse, LinkCheckResult, LinkCheckTarget } from '@/types'
-import { toErrorMessage } from '#shared/utils/error'
 import { ref } from 'vue'
+import { toErrorMessage } from '#shared/utils/error'
 import { useAPI } from '@/utils/api'
 
 type LinkCheckRunResult = 'completed' | 'empty' | 'stopped'

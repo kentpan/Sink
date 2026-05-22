@@ -1,8 +1,8 @@
-import type { LinkCheckResult } from '#shared/types/link-check'
 import type { H3Event } from 'h3'
+import type { LinkCheckResult } from '#shared/types/link-check'
+import { ofetch } from 'ofetch'
 import { LinkCheckRequestSchema } from '#shared/schemas/link-check'
 import { toErrorMessage } from '#shared/utils/error'
-import { ofetch } from 'ofetch'
 
 defineRouteMeta({
   openAPI: {
@@ -38,6 +38,7 @@ defineRouteMeta({
 })
 
 const SAFE_FORWARDED_HEADERS = ['accept-language', 'user-agent'] as const
+const DIGITS_REGEX = /^\d+$/
 
 function getSafeHeaders(event: H3Event): Headers {
   const headers = new Headers()
@@ -153,7 +154,7 @@ function isBlockedIpv4(hostname: string): boolean {
     return false
 
   const bytes = parts.map((part) => {
-    if (!/^\d+$/.test(part))
+    if (!DIGITS_REGEX.test(part))
       return Number.NaN
 
     const value = Number(part)

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { LinkCheckConfig } from '@/types'
-import { LinkCheckConfigSchema } from '#shared/schemas/link-check'
 import { useForm } from '@tanstack/vue-form'
+import { LinkCheckConfigSchema } from '#shared/schemas/link-check'
 
 defineProps<{
   checking: boolean

@@ -10,6 +10,8 @@ export interface BackupData {
   links: Link[]
 }
 
+const TIMESTAMP_REGEX = /:/g
+
 export async function backupKVToR2(env: Cloudflare.Env, isManual: boolean = false): Promise<void> {
   if (!env.R2) {
     console.info('[backup:kv] R2 binding not configured, skipping backup')
@@ -48,7 +50,7 @@ export async function backupKVToR2(env: Cloudflare.Env, isManual: boolean = fals
     links: allLinks,
   }
 
-  const timestamp = now.toISOString().replace(/:/g, '-')
+  const timestamp = now.toISOString().replace(TIMESTAMP_REGEX, '-')
   const prefix = isManual ? 'manual-links-' : 'links-'
   const filename = `backups/${prefix}${timestamp}.json`
 

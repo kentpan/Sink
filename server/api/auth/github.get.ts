@@ -1,5 +1,3 @@
-import { isLocalMode } from '../../utils/local-mode'
-
 defineRouteMeta({
   openAPI: {
     description: 'Redirect to GitHub OAuth authorization page',
@@ -7,10 +5,6 @@ defineRouteMeta({
 })
 
 export default eventHandler((event) => {
-  if (!isLocalMode(event)) {
-    throw createError({ status: 501, statusText: 'GitHub OAuth not available in Cloudflare mode' })
-  }
-
   const { githubClientId, githubRedirectUri } = useRuntimeConfig(event)
 
   if (!githubClientId) {

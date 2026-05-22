@@ -1,6 +1,6 @@
 import type { NitroFetchOptions, NitroFetchRequest } from 'nitropack'
-import { navigateTo } from '#imports'
 import { defu } from 'defu'
+import { navigateTo } from '#imports'
 import { useAuthToken } from '@/composables/useAuthToken'
 
 type APIOptions = Omit<NitroFetchOptions<NitroFetchRequest>, 'headers'> & {

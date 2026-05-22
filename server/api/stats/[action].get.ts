@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { QuerySchema } from '#shared/schemas/query'
 import { generateCsv } from '#shared/utils/csv'
 import { createExportFilename } from '#shared/utils/export-file'
-import { isLocalMode } from '../../utils/local-mode'
+import { analyticsUseWAE } from '../../lowdb/analytics'
 
 const { select } = SqlBricks
 
@@ -66,29 +66,20 @@ export default eventHandler(async (event) => {
   const query = await getValidatedQuery(event, StatsExportQuerySchema.parse)
   const sql = query2sql(query, event)
 
-  let result: { data?: AccessExportRow[] }
+  const analyticsResult = await analyticsUseWAE(event, sql)
+  const data = analyticsResult.data as Array<{ slug: string, url: string, _sample_interval: number }>
 
-  if (isLocalMode(event)) {
-    const { analyticsUseWAE } = await import('../../lowdb/analytics')
-    const analyticsResult = await analyticsUseWAE(event, sql)
-    const data = analyticsResult.data as Array<{ slug: string, url: string, _sample_interval: number }>
+  const grouped: Record<string, AccessExportRow> = {}
+  data.forEach((row) => {
+    const key = `${row.slug}-${row.url}`
+    if (!grouped[key]) {
+      grouped[key] = { slug: row.slug, url: row.url, viewer: 0, views: 0, referer: 0 }
+    }
+    grouped[key].views = (grouped[key].views || 0) + (Number(row._sample_interval) || 1)
+    grouped[key].viewer = (grouped[key].viewer || 0) + 1
+  })
 
-    const grouped: Record<string, AccessExportRow> = {}
-    data.forEach((row) => {
-      const key = `${row.slug}-${row.url}`
-      if (!grouped[key]) {
-        grouped[key] = { slug: row.slug, url: row.url, viewer: 0, views: 0, referer: 0 }
-      }
-      grouped[key].views = (grouped[key].views || 0) + (Number(row._sample_interval) || 1)
-      grouped[key].viewer = (grouped[key].viewer || 0) + 1
-    })
-
-    result = { data: Object.values(grouped) }
-  }
-  else {
-    result = await useWAE(event, sql) as { data?: AccessExportRow[] }
-  }
-
+  const result = { data: Object.values(grouped) }
   const csv = toCsv(result.data ?? [])
 
   setResponseHeader(event, 'Content-Type', 'text/csv; charset=utf-8')

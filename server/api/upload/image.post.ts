@@ -1,6 +1,6 @@
 import { LinkSchema, nanoid } from '#shared/schemas/link'
 import { IMAGE_ALLOWED_TYPES, IMAGE_MAX_SIZE } from '@/utils/image'
-import { isLocalMode } from '../../utils/local-mode'
+import { isCloudflareEnv } from '../../utils/env'
 
 const slugValidator = LinkSchema.shape.slug
 
@@ -26,7 +26,7 @@ defineRouteMeta({
 })
 
 export default eventHandler(async (event) => {
-  if (isLocalMode(event)) {
+  if (!isCloudflareEnv()) {
     throw createError({
       status: 501,
       statusText: 'Image upload not available in local development mode',

@@ -1,31 +1,32 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-// Tweet IDs to fetch
 const TWEET_IDS = [
-  '1990813013247492308', // @xmok_
-  '1876990358250246628', // @ianhowells
-  '1931199560489251052', // @indie_maker_fox
-  '1944683470627741966', // @allentown521
-  '1925250262870237555', // @Mokkapps
-  '1795169172873413116', // @GitHubGPT
-  '1953003326317920422', // @ossalternative
-  '1809763345320624271', // @f_sugar
-  '1833125667568804284', // @bitdoze
-  '1817702576629985685', // @HiTw93
-  '1846465874389356916', // @luoleiorg
-  '1796478331522781460', // @LuoSays
-  '1905626254931624281', // @DeBill_me
-  '1930301401323975179', // @lakphy
-  '1961700003459862799', // @wey_gu
-  '1794746047136411723', // @NoPeople404
-  '1988243083558035901', // @yeahwong
-  '1808150012058390969', // @m1ssuo
-  '1893594908147270073', // @hellokaton
-  '1857623546606080350', // @TooooooBug
+  '1990813013247492308',
+  '1876990358250246628',
+  '1931199560489251052',
+  '1944683470627741966',
+  '1925250262870237555',
+  '1795169172873413116',
+  '1953003326317920422',
+  '1809763345320624271',
+  '1833125667568804284',
+  '1817702576629985685',
+  '1846465874389356916',
+  '1796478331522781460',
+  '1905626254931624281',
+  '1930301401323975179',
+  '1961700003459862799',
+  '1794746047136411723',
+  '1988243083558035901',
+  '1808150012058390969',
+  '1893594908147270073',
+  '1857623546606080350',
 ]
 
 const API_BASE = 'https://react-tweet.vercel.app/api/tweet'
+const TCO_REGEX = /https:\/\/t\.co\/\w+/g
+const WHITESPACE_REGEX = /\s+/g
 
 async function fetchTweet(id) {
   const res = await fetch(`${API_BASE}/${id}`)
@@ -42,10 +43,9 @@ async function fetchTweet(id) {
     return null
   }
 
-  // Clean up tweet text: remove t.co links and extra whitespace
   const cleanContent = tweet.text
-    .replace(/https:\/\/t\.co\/\w+/g, '')
-    .replace(/\s+/g, ' ')
+    .replace(TCO_REGEX, '')
+    .replace(WHITESPACE_REGEX, ' ')
     .trim()
 
   return {
@@ -62,7 +62,6 @@ async function fetchTweet(id) {
 async function main() {
   console.log('Fetching testimonials from Twitter...')
 
-  // Shuffle TWEET_IDS for random order
   const shuffledIds = [...TWEET_IDS].sort(() => Math.random() - 0.5)
 
   const results = await Promise.all(shuffledIds.map(fetchTweet))
@@ -73,7 +72,6 @@ async function main() {
     process.exit(1)
   }
 
-  // Ensure data directory exists
   const dataDir = join(import.meta.dirname, '../app/data')
   mkdirSync(dataDir, { recursive: true })
 

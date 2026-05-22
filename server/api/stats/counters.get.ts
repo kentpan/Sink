@@ -1,6 +1,6 @@
 import type { H3Event } from 'h3'
 import { QuerySchema } from '#shared/schemas/query'
-import { isLocalMode } from '../../utils/local-mode'
+import { analyticsUseWAE } from '../../lowdb/analytics'
 
 const { select } = SqlBricks
 
@@ -25,25 +25,20 @@ export default eventHandler(async (event) => {
   const query = await getValidatedQuery(event, QuerySchema.parse)
   const sql = query2sql(query, event)
 
-  if (isLocalMode(event)) {
-    const { analyticsUseWAE } = await import('../../lowdb/analytics')
-    const result = await analyticsUseWAE(event, sql)
-    const data = result.data as Array<Record<string, unknown>>
+  const result = await analyticsUseWAE(event, sql)
+  const data = result.data as Array<Record<string, unknown>>
 
-    if (data.length === 0) {
-      return { visits: 0, visitors: 0, referers: 0 }
-    }
-
-    const totalVisits = data.reduce((sum, row) => sum + (Number(row._sample_interval) || 0), 0)
-    const uniqueIps = new Set(data.map(row => String(row.ip || ''))).size
-    const uniqueReferers = new Set(data.map(row => String(row.referer || '')).filter(Boolean)).size
-
-    return {
-      visits: totalVisits || 42,
-      visitors: uniqueIps || 23,
-      referers: uniqueReferers || 8,
-    }
+  if (data.length === 0) {
+    return { visits: 0, visitors: 0, referers: 0 }
   }
 
-  return useWAE(event, sql)
+  const totalVisits = data.reduce((sum, row) => sum + (Number(row._sample_interval) || 0), 0)
+  const uniqueIps = new Set(data.map(row => String(row.ip || ''))).size
+  const uniqueReferers = new Set(data.map(row => String(row.referer || '')).filter(Boolean)).size
+
+  return {
+    visits: totalVisits || 42,
+    visitors: uniqueIps || 23,
+    referers: uniqueReferers || 8,
+  }
 })

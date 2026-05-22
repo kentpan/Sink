@@ -2,7 +2,7 @@ import process from 'node:process'
 import tailwindcss from '@tailwindcss/vite'
 import { currentLocales } from './i18n/i18n'
 
-const isCloudflare = process.env.NODE_ENV === 'production' || process.env.NUXT_USE_CLOUDFLARE === 'true'
+const isCloudflare = process.env.NODE_ENV === 'production' || process.env.NUXT_CLOUDFLARE === 'true'
 const preset = isCloudflare ? 'cloudflare-module' : undefined
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
@@ -111,6 +111,15 @@ export default defineNuxtConfig({
     ],
     worker: {
       format: 'es',
+    },
+    build: {
+      sourcemap: false,
+      commonjsOptions: {
+        strictRequires: true,
+      },
+    },
+    optimizeDeps: {
+      exclude: ['@vueuse/core'],
     },
   },
   eslint: {

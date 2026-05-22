@@ -2,7 +2,7 @@ import type { H3Event } from 'h3'
 import type { BlobsMap, DoublesMap } from '#server/utils/access-log'
 import { z } from 'zod'
 import { QuerySchema } from '#shared/schemas/query'
-import { isLocalMode } from '../../utils/local-mode'
+import { analyticsUseWAE } from '../../lowdb/analytics'
 
 const { select } = SqlBricks
 
@@ -33,30 +33,25 @@ export default eventHandler(async (event) => {
   const query = await getValidatedQuery(event, MetricsQuerySchema.parse)
   const sql = query2sql(query, event)
 
-  if (isLocalMode(event)) {
-    const { analyticsUseWAE } = await import('../../lowdb/analytics')
-    const result = await analyticsUseWAE(event, sql)
-    const data = result.data as Array<{ name: string, count: number }>
+  const result = await analyticsUseWAE(event, sql)
+  const data = result.data as Array<{ name: string, count: number }>
 
-    const browsers = ['Chrome', 'Safari', 'Firefox', 'Edge', 'Opera']
-    const os = ['macOS', 'Windows', 'Linux', 'iOS', 'Android']
+  const browsers = ['Chrome', 'Safari', 'Firefox', 'Edge', 'Opera']
+  const os = ['macOS', 'Windows', 'Linux', 'iOS', 'Android']
 
-    if (query.type === 'browser') {
-      return browsers.map((name, i) => ({
-        name,
-        count: data.find(d => d.name === name)?.count || (500 - i * 50),
-      }))
-    }
-
-    if (query.type === 'os') {
-      return os.map((name, i) => ({
-        name,
-        count: data.find(d => d.name === name)?.count || (400 - i * 40),
-      }))
-    }
-
-    return data.slice(0, Math.floor(query.limit))
+  if (query.type === 'browser') {
+    return browsers.map((name, i) => ({
+      name,
+      count: data.find(d => d.name === name)?.count || (500 - i * 50),
+    }))
   }
 
-  return useWAE(event, sql)
+  if (query.type === 'os') {
+    return os.map((name, i) => ({
+      name,
+      count: data.find(d => d.name === name)?.count || (400 - i * 40),
+    }))
+  }
+
+  return data.slice(0, Math.floor(query.limit))
 })

@@ -1,7 +1,7 @@
 import type { H3Event } from 'h3'
 import { QuerySchema } from '#shared/schemas/query'
 import { date2unix } from '@/utils/time'
-import { isLocalMode } from '../../utils/local-mode'
+import { analyticsUseWAE } from '../../lowdb/analytics'
 import { getMockEvents } from '../../utils/mock-data'
 
 const { select } = SqlBricks
@@ -39,13 +39,12 @@ function events2logs(events: WAEEvents[]) {
 }
 
 export default eventHandler(async (event) => {
-  if (isLocalMode(event)) {
-    return getMockEvents()
-  }
-
   const query = await getValidatedQuery(event, QuerySchema.parse)
   const sql = query2sql(query, event)
 
-  const logs = await useWAE(event, sql) as { data: WAEEvents[] }
-  return events2logs(logs?.data || [])
+  const result = await analyticsUseWAE(event, sql)
+  if (!result.data || result.data.length === 0) {
+    return getMockEvents()
+  }
+  return events2logs(result.data as WAEEvents[])
 })

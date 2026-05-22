@@ -1,10 +1,13 @@
+const CSV_ESCAPE_REGEX = /^[=+\-@\t\r]/
+const CSV_QUOTE_REGEX = /[",\n\r]/
+
 function escapeCsvCell(value: unknown): string {
   let text = String(value ?? '')
 
-  if (/^[=+\-@\t\r]/.test(text))
+  if (CSV_ESCAPE_REGEX.test(text))
     text = `'${text}`
 
-  if (/[",\n\r]/.test(text))
+  if (CSV_QUOTE_REGEX.test(text))
     return `"${text.replaceAll('"', '""')}"`
 
   return text
