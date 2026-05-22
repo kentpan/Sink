@@ -2,6 +2,9 @@ import process from 'node:process'
 import tailwindcss from '@tailwindcss/vite'
 import { currentLocales } from './i18n/i18n'
 
+const isCloudflare = process.env.NODE_ENV === 'production' || process.env.NUXT_USE_CLOUDFLARE === 'true'
+const preset = isCloudflare ? 'cloudflare-module' : undefined
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   extends: ['./layers/dashboard'],
@@ -13,7 +16,7 @@ export default defineNuxtConfig({
     '@vueuse/motion/nuxt',
     'shadcn-nuxt',
   ],
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   css: ['@/assets/css/tailwind.css'],
   colorMode: {
     classSuffix: '',
@@ -36,6 +39,7 @@ export default defineNuxtConfig({
     disableAutoBackup: false,
     notFoundRedirect: '',
     safeBrowsingDoh: '', // Set to DoH URL to enable auto-detection, e.g. https://family.cloudflare-dns.com/dns-query
+    loginPassword: process.env.NUXT_LOGIN_PASSWORD || '', // Password for local development login
     public: {
       previewMode: '',
       slugDefaultLength: '6',
@@ -71,7 +75,7 @@ export default defineNuxtConfig({
   },
   compatibilityDate: 'latest',
   nitro: {
-    preset: !import.meta.env.CI ? 'cloudflare-module' : undefined,
+    preset,
     experimental: {
       openAPI: true,
     },
@@ -92,6 +96,10 @@ export default defineNuxtConfig({
         },
       },
     },
+  },
+  devServer: {
+    port: process.env.PORT ? Number.parseInt(process.env.PORT) : 4000,
+    host: 'localhost',
   },
   vite: {
     plugins: [

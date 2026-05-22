@@ -47,8 +47,14 @@ function hasOgConfig(link: Link): boolean {
   return !!(link.title || link.image)
 }
 
+const PATH_TRIM_REGEX = /^\/|\/$/g
+
+function isLocalMode(): boolean {
+  return process.env.NUXT_USE_CLOUDFLARE !== 'true'
+}
+
 export default eventHandler(async (event) => {
-  const { pathname: slug } = parsePath(event.path.replace(/^\/|\/$/g, ''))
+  const { pathname: slug } = parsePath(event.path.replace(PATH_TRIM_REGEX, ''))
   const { slugRegex, reserveSlug } = useAppConfig()
   const { homeURL, linkCacheTtl, caseSensitive, redirectWithQuery, redirectStatusCode } = useRuntimeConfig(event)
   const { cloudflare } = event.context
@@ -62,7 +68,8 @@ export default eventHandler(async (event) => {
     return
   }
 
-  if (slug && !reserveSlug.includes(slug) && slugRegex.test(slug) && cloudflare) {
+  const canProcessLink = isLocalMode() || cloudflare
+  if (slug && !reserveSlug.includes(slug) && slugRegex.test(slug) && canProcessLink) {
     let link: Link | null = null
 
     const lowerCaseSlug = slug.toLowerCase()

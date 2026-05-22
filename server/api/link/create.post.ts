@@ -1,4 +1,6 @@
 import { LinkSchema } from '#shared/schemas/link'
+import { buildLinkResponse, hashLinkPasswordForCreate, prepareIncomingLink } from '../../utils/link-processing'
+import { getLink, putLink } from '../../utils/link-store'
 
 defineRouteMeta({
   openAPI: {

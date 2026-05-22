@@ -1,5 +1,10 @@
+const BEARER_REGEX = /^Bearer\s+/
+
 export default eventHandler((event) => {
-  const token = getHeader(event, 'Authorization')?.replace(/^Bearer\s+/, '')
+  if (event.path === '/api/login')
+    return
+
+  const token = getHeader(event, 'Authorization')?.replace(BEARER_REGEX, '')
   if (event.path.startsWith('/api/') && token !== useRuntimeConfig(event).siteToken) {
     throw createError({
       status: 401,

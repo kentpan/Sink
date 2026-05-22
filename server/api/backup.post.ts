@@ -1,3 +1,5 @@
+import { isLocalMode } from '../utils/local-mode'
+
 defineRouteMeta({
   openAPI: {
     description: 'Manually trigger a backup to R2',
@@ -6,6 +8,13 @@ defineRouteMeta({
 })
 
 export default eventHandler(async (event) => {
+  if (isLocalMode()) {
+    throw createError({
+      status: 501,
+      statusText: 'Backup not available in local development mode',
+    })
+  }
+
   const env = event.context.cloudflare.env
 
   if (!env.R2) {

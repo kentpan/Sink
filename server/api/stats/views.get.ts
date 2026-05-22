@@ -1,6 +1,8 @@
 import type { H3Event } from 'h3'
-import { QuerySchema } from '#shared/schemas/query'
 import { z } from 'zod'
+import { QuerySchema } from '#shared/schemas/query'
+import { analyticsUseWAE } from '../../lowdb/analytics'
+import { isLocalMode } from '../../utils/local-mode'
 
 const { select } = SqlBricks
 
@@ -27,8 +29,83 @@ function query2sql(query: z.infer<typeof ViewsQuerySchema>, event: H3Event): str
   return sql.toString()
 }
 
+function generateMockViews(unit: string, count: number = 24): Array<{ time: string, visits: number, visitors: number }> {
+  const now = new Date()
+  const result: Array<{ time: string, visits: number, visitors: number }> = []
+
+  for (let i = count - 1; i >= 0; i--) {
+    const date = new Date(now)
+
+    switch (unit) {
+      case 'minute':
+        date.setMinutes(date.getMinutes() - i)
+        break
+      case 'hour':
+        date.setHours(date.getHours() - i)
+        break
+      case 'day':
+      default:
+        date.setDate(date.getDate() - i)
+        break
+    }
+
+    const timeStr = date.toISOString().replace('T', ' ').substring(0, unit === 'minute' ? 16 : 13)
+
+    result.push({
+      time: timeStr,
+      visits: Math.floor(Math.random() * 100) + 10,
+      visitors: Math.floor(Math.random() * 50) + 5,
+    })
+  }
+
+  return result
+}
+
 export default eventHandler(async (event) => {
   const query = await getValidatedQuery(event, ViewsQuerySchema.parse)
   const sql = query2sql(query, event)
+
+  if (isLocalMode()) {
+    const result = await analyticsUseWAE(event, sql)
+    const data = result.data as Array<{ time: string, visits: number, visitors: number }>
+
+    if (data.length === 0) {
+      return { data: generateMockViews(query.unit) }
+    }
+
+    const grouped: Record<string, { visits: number, visitors: number }> = {}
+    data.forEach((row) => {
+      if (!row.time)
+        return
+
+      let timeKey = row.time
+      if (query.unit === 'hour') {
+        timeKey = row.time.substring(0, 13)
+      }
+      else if (query.unit === 'day') {
+        timeKey = row.time.substring(0, 10)
+      }
+
+      if (!grouped[timeKey]) {
+        grouped[timeKey] = { visits: 0, visitors: 0 }
+      }
+      grouped[timeKey].visits += typeof row.visits === 'number' ? row.visits : 0
+      grouped[timeKey].visitors += typeof row.visitors === 'number' ? row.visitors : 0
+    })
+
+    const entries = Object.entries(grouped)
+    if (entries.length === 0) {
+      return { data: generateMockViews(query.unit) }
+    }
+
+    return {
+      data: entries.map(([time, values]) => ({
+        time,
+        visits: values.visits,
+        visitors: values.visitors,
+      })),
+    }
+  }
+
   return useWAE(event, sql)
 })

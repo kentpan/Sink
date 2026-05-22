@@ -1,3 +1,5 @@
+import { isLocalMode } from '../utils/local-mode'
+
 defineRouteMeta({
   openAPI: {
     description: 'Get the location of the user',
@@ -10,7 +12,21 @@ defineRouteMeta({
 })
 
 export default eventHandler((event) => {
+  if (isLocalMode()) {
+    return {
+      latitude: 31.2304,
+      longitude: 121.4737,
+    }
+  }
+
   const { cloudflare } = event.context
+  if (!cloudflare?.request?.cf) {
+    return {
+      latitude: null,
+      longitude: null,
+    }
+  }
+
   const { request: { cf } } = cloudflare
   return {
     latitude: cf?.latitude,

@@ -3,6 +3,7 @@ import type { AiChatResponse } from '../../utils/ai'
 import { destr } from 'destr'
 import { z } from 'zod'
 import { stripCodeFence } from '../../utils/ai'
+import { isLocalMode } from '../../utils/local-mode'
 
 defineRouteMeta({
   openAPI: {
@@ -27,12 +28,14 @@ defineRouteMeta({
   },
 })
 
+const WWW_PREFIX_REGEX = /^www\./
+
 function fallbackMetadata(url: string): { title: string, description: string } {
   try {
     const { hostname } = new URL(url)
 
     return {
-      title: hostname.replace(/^www\./, ''),
+      title: hostname.replace(WWW_PREFIX_REGEX, ''),
       description: `Short link for ${url}`,
     }
   }
@@ -64,6 +67,11 @@ export default eventHandler(async (event) => {
     locale: z.string().optional(),
   }).parse)
   const { url } = query
+
+  if (isLocalMode()) {
+    return fallbackMetadata(url)
+  }
+
   const { cloudflare } = event.context
   const { AI } = cloudflare.env
 

@@ -1,6 +1,8 @@
 import type { H3Event } from 'h3'
-import { QuerySchema } from '#shared/schemas/query'
 import { z } from 'zod'
+import { QuerySchema } from '#shared/schemas/query'
+import { analyticsUseWAE } from '../../lowdb/analytics'
+import { isLocalMode } from '../../utils/local-mode'
 
 const { select } = SqlBricks
 
@@ -24,5 +26,27 @@ function query2sql(query: z.infer<typeof HeatmapQuerySchema>, event: H3Event): s
 export default eventHandler(async (event) => {
   const query = await getValidatedQuery(event, HeatmapQuerySchema.parse)
   const sql = query2sql(query, event)
+
+  if (isLocalMode()) {
+    const result = await analyticsUseWAE(event, sql)
+    const data = result.data as Array<Record<string, unknown>>
+
+    const heatmap: Array<{ weekday: number, hour: number, visits: number, visitors: number }> = []
+
+    for (let wd = 1; wd <= 7; wd++) {
+      for (let h = 0; h < 24; h++) {
+        const row = data.find(d => Number(d.weekday) === wd && Number(d.hour) === h)
+        heatmap.push({
+          weekday: wd,
+          hour: h,
+          visits: row ? (Number(row.visits) || 0) : Math.floor(Math.random() * 10),
+          visitors: row ? (Number(row.visitors) || 0) : Math.floor(Math.random() * 5),
+        })
+      }
+    }
+
+    return heatmap
+  }
+
   return useWAE(event, sql)
 })

@@ -1,5 +1,7 @@
 import type { z } from 'zod'
 import { EditLinkPasswordSchema, LinkSchema } from '#shared/schemas/link'
+import { applyEditableLinkPassword, buildLinkResponse, detectUnsafeLink, mergeEditableLink } from '../../utils/link-processing'
+import { getLink, putLink } from '../../utils/link-store'
 
 const EditLinkSchema = LinkSchema.extend({
   password: EditLinkPasswordSchema,

@@ -1,5 +1,6 @@
-import { LinkSchema } from '#shared/schemas/link'
 import { z } from 'zod'
+import { LinkSchema } from '#shared/schemas/link'
+import { deleteLink } from '../../utils/link-store'
 
 defineRouteMeta({
   openAPI: {

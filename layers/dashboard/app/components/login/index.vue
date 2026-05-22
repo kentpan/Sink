@@ -7,16 +7,16 @@ const { t } = useI18n()
 const { previewMode } = useRuntimeConfig().public
 const { setToken, removeToken } = useAuthToken()
 
-const token = ref('')
+const password = ref('')
 const error = ref('')
 
 const LoginSchema = z.object({
-  token: z.string().min(1),
+  password: z.string().min(1),
 })
 
 async function handleSubmit() {
   error.value = ''
-  const result = LoginSchema.safeParse({ token: token.value })
+  const result = LoginSchema.safeParse({ password: password.value })
 
   if (!result.success) {
     error.value = t('login.token_required')
@@ -24,8 +24,11 @@ async function handleSubmit() {
   }
 
   try {
-    setToken(token.value)
-    await useAPI('/api/verify')
+    const response = await $fetch('/api/login', {
+      method: 'POST',
+      body: { password: password.value },
+    })
+    setToken(response.token)
     navigateTo('/dashboard')
   }
   catch (e) {
@@ -63,12 +66,12 @@ async function handleSubmit() {
         />
         <FieldGroup>
           <Field :data-invalid="!!error">
-            <FieldLabel for="token">
-              {{ $t('login.token_label') }}
+            <FieldLabel for="password">
+              {{ $t('login.password_label') || 'Password' }}
             </FieldLabel>
             <Input
-              id="token"
-              v-model="token"
+              id="password"
+              v-model="password"
               type="password"
               name="password"
               autocomplete="current-password"

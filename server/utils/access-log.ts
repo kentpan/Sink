@@ -13,9 +13,13 @@ import {
 } from 'ua-parser-js/extensions'
 import { parseURL } from 'ufo'
 import { getFlag } from '@/utils/flag'
+import { analyticsWriteDataPoint } from '../lowdb/analytics'
+import { isLocalMode } from './local-mode'
+
+const NON_DIGIT_REGEX = /\D/g
 
 function toBlobNumber(blob: string) {
-  return +blob.replace(/\D/g, '')
+  return +blob.replace(NON_DIGIT_REGEX, '')
 }
 
 export const blobsMap = {
@@ -111,8 +115,10 @@ export function useAccessLog(event: H3Event) {
   })).getResult()
 
   const { cloudflare } = event.context
-  const { request: { cf }, env } = cloudflare
   const link = event.context.link || {}
+
+  const cf = cloudflare?.request?.cf
+  const env = cloudflare?.env
 
   const isBot = cf?.botManagement?.verifiedBot
     || ['crawler', 'fetcher'].includes(uaInfo?.browser?.type || '')
@@ -125,7 +131,7 @@ export function useAccessLog(event: H3Event) {
   }
 
   const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
-  const countryName = regionNames.of(cf?.country || 'WD') // fallback to "Worldwide"
+  const countryName = regionNames.of(cf?.country || 'WD')
   const accessLogs = {
     url: link.url,
     slug: link.slug,
@@ -144,19 +150,26 @@ export function useAccessLog(event: H3Event) {
     deviceType: uaInfo?.device?.type,
     COLO: cf?.colo,
 
-    // For RealTime Globe
     latitude: Number(cf?.latitude || getHeader(event, 'cf-iplatitude') || 0),
     longitude: Number(cf?.longitude || getHeader(event, 'cf-iplongitude') || 0),
   }
 
-  if (process.env.NODE_ENV === 'production') {
-    return env.ANALYTICS.writeDataPoint({
-      indexes: [link.id], // only one index
+  if (isLocalMode()) {
+    return analyticsWriteDataPoint({
+      indexes: [link.id || ''],
       blobs: logs2blobs(accessLogs),
       doubles: logs2doubles(accessLogs),
     })
   }
 
-  console.log('access logs:', accessLogs, logs2blobs(accessLogs), logs2doubles(accessLogs), { ...blobs2logs(logs2blobs(accessLogs)), ...doubles2logs(logs2doubles(accessLogs)) })
+  if (process.env.NODE_ENV === 'production' && env?.ANALYTICS) {
+    return env.ANALYTICS.writeDataPoint({
+      indexes: [link.id],
+      blobs: logs2blobs(accessLogs),
+      doubles: logs2doubles(accessLogs),
+    })
+  }
+
+  console.log('access logs:', accessLogs)
   return Promise.resolve()
 }

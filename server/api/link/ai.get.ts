@@ -3,6 +3,7 @@ import type { AiChatResponse } from '../../utils/ai'
 import { destr } from 'destr'
 import { z } from 'zod'
 import { stripCodeFence } from '../../utils/ai'
+import { isLocalMode } from '../../utils/local-mode'
 
 defineRouteMeta({
   openAPI: {
@@ -20,6 +21,9 @@ defineRouteMeta({
   },
 })
 
+const SANITIZE_SLUG_REGEX = /[^A-Z0-9-]/gi
+const TRIM_DASHES_REGEX = /^-+|-+$/g
+
 function fallbackSlug(event: H3Event, url: string): string {
   let source = 'link'
 
@@ -33,9 +37,9 @@ function fallbackSlug(event: H3Event, url: string): string {
   }
 
   const sanitizedSlug = source
-    .replace(/[^A-Z0-9-]/gi, '-')
+    .replace(SANITIZE_SLUG_REGEX, '-')
     .slice(0, 50)
-    .replace(/^-+|-+$/g, '') || 'link'
+    .replace(TRIM_DASHES_REGEX, '') || 'link'
 
   return normalizeSlug(event, sanitizedSlug)
 }
@@ -44,6 +48,11 @@ export default eventHandler(async (event) => {
   const url = (await getValidatedQuery(event, z.object({
     url: z.string().url(),
   }).parse)).url
+
+  if (isLocalMode()) {
+    return { slug: fallbackSlug(event, url) }
+  }
+
   const { cloudflare } = event.context
   const { AI } = cloudflare.env
 

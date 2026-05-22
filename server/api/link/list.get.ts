@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { sanitizeLinksPassword } from '../../utils/link-password'
+import { listLinks } from '../../utils/link-store'
 
 defineRouteMeta({
   openAPI: {

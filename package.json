@@ -8,7 +8,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "nuxt dev --port 7465",
+    "dev": "nuxt dev",
     "analyze": "nuxt analyze",
     "test": "vitest",
     "build": "NODE_OPTIONS=--max-old-space-size=8192 nuxt build",
@@ -93,7 +93,8 @@
     "vue-tsc": "^3.2.4",
     "vue3-simple-icons": "^15.6.0",
     "wrangler": "^4.62.0",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "lowdb": "^7.0.1"
   },
   "simple-git-hooks": {
     "pre-commit": "npm run lint-staged"
