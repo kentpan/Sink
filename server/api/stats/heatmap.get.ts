@@ -1,7 +1,6 @@
 import type { H3Event } from 'h3'
 import { z } from 'zod'
 import { QuerySchema } from '#shared/schemas/query'
-import { analyticsUseWAE } from '../../lowdb/analytics'
 import { isLocalMode } from '../../utils/local-mode'
 
 const { select } = SqlBricks
@@ -27,7 +26,8 @@ export default eventHandler(async (event) => {
   const query = await getValidatedQuery(event, HeatmapQuerySchema.parse)
   const sql = query2sql(query, event)
 
-  if (isLocalMode()) {
+  if (isLocalMode(event)) {
+    const { analyticsUseWAE } = await import('../../lowdb/analytics')
     const result = await analyticsUseWAE(event, sql)
     const data = result.data as Array<Record<string, unknown>>
 

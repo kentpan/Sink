@@ -1,28 +1,23 @@
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { JSONFilePreset } from 'lowdb/node'
+const isCloudflare = process.env.NODE_ENV === 'production' || process.env.NUXT_USE_CLOUDFLARE === 'true'
 
-interface AnalyticsDataPoint {
-  indexes: string[]
-  blobs: string[]
-  doubles: number[]
-  timestamp: number
-}
-
-interface AnalyticsData {
-  points: AnalyticsDataPoint[]
-}
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const dbPath = join(__dirname, '../data/analytics.json')
-
-let db: ReturnType<typeof JSONFilePreset<AnalyticsData>> | null = null
+let db: any = null
 
 async function getDB() {
   if (db)
     return db
 
-  db = await JSONFilePreset<AnalyticsData>(dbPath, { points: [] })
+  if (isCloudflare) {
+    throw new Error('lowdb is not available in Cloudflare mode')
+  }
+
+  const path = await import('node:path')
+  const { fileURLToPath } = await import('node:url')
+  const { JSONFilePreset } = await import('lowdb/node')
+
+  const __dirname = path.dirname(fileURLToPath(import.meta.url))
+  const dbPath = path.join(__dirname, '../data/analytics.json')
+
+  db = await JSONFilePreset(dbPath, { points: [] })
   return db
 }
 
@@ -44,7 +39,7 @@ export async function analyticsQuery(_sql: string): Promise<{ data: Record<strin
 
   const points = database.data.points.slice(-100)
 
-  const result = points.map((point, index) => {
+  const result = points.map((point: { timestamp: number, indexes: string[], blobs: string[], doubles: number[] }, index: number) => {
     const obj: Record<string, unknown> = {
       time: new Date(point.timestamp).toISOString().replace('T', ' ').substring(0, 19),
       timestamp: new Date(point.timestamp).toISOString(),

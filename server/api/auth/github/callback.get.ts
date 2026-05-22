@@ -1,7 +1,10 @@
 import { z } from 'zod'
-import { createOrUpdateUser } from '../../../lowdb/users'
 import { generateJwt } from '../../../utils/jwt'
 import { isLocalMode } from '../../../utils/local-mode'
+
+async function getUsersModule() {
+  return await import('../../../lowdb/users')
+}
 
 defineRouteMeta({
   openAPI: {
@@ -15,7 +18,7 @@ const QuerySchema = z.object({
 })
 
 export default eventHandler(async (event) => {
-  if (!isLocalMode()) {
+  if (!isLocalMode(event)) {
     throw createError({ status: 501, statusText: 'GitHub OAuth not available in Cloudflare mode' })
   }
 
@@ -68,6 +71,7 @@ export default eventHandler(async (event) => {
   const primaryEmail = emails.find((e: { primary: boolean }) => e.primary)
   const email = primaryEmail?.email || userData.email || ''
 
+  const { createOrUpdateUser } = await getUsersModule()
   const user = await createOrUpdateUser({
     id: String(userData.id),
     login: userData.login,
@@ -77,7 +81,7 @@ export default eventHandler(async (event) => {
   })
 
   const expiresInMinutes = 60 * 24
-  const token = generateJwt({ sub: user.id, provider: 'github' }, jwtSecret, expiresInMinutes)
+  const token = await generateJwt({ sub: user.id, provider: 'github' }, jwtSecret, expiresInMinutes)
   const expiresAt = Math.floor(Date.now() / 1000) + (expiresInMinutes * 60)
 
   const html = `

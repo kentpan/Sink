@@ -13,8 +13,11 @@ import {
 } from 'ua-parser-js/extensions'
 import { parseURL } from 'ufo'
 import { getFlag } from '@/utils/flag'
-import { analyticsWriteDataPoint } from '../lowdb/analytics'
 import { isLocalMode } from './local-mode'
+
+async function getAnalyticsModule() {
+  return await import('../lowdb/analytics')
+}
 
 const NON_DIGIT_REGEX = /\D/g
 
@@ -96,7 +99,7 @@ export function doubles2logs(doubles: number[]) {
   }, {} as Partial<LogsMap>)
 }
 
-export function useAccessLog(event: H3Event) {
+export async function useAccessLog(event: H3Event) {
   const ip = getHeader(event, 'cf-connecting-ip') || getHeader(event, 'x-real-ip') || getRequestIP(event, { xForwardedFor: true })
 
   const { host: referer } = parseURL(getHeader(event, 'referer'))
@@ -154,7 +157,8 @@ export function useAccessLog(event: H3Event) {
     longitude: Number(cf?.longitude || getHeader(event, 'cf-iplongitude') || 0),
   }
 
-  if (isLocalMode()) {
+  if (isLocalMode(event)) {
+    const { analyticsWriteDataPoint } = await getAnalyticsModule()
     return analyticsWriteDataPoint({
       indexes: [link.id || ''],
       blobs: logs2blobs(accessLogs),

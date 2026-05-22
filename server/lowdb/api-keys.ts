@@ -1,9 +1,3 @@
-import crypto from 'node:crypto'
-import * as fs from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { JSONFilePreset } from 'lowdb/node'
-
 interface ApiKey {
   id: string
   key: string
@@ -14,30 +8,45 @@ interface ApiKey {
   active: boolean
 }
 
-interface ApiKeyData {
-  keys: ApiKey[]
-}
+const isCloudflare = process.env.NODE_ENV === 'production' || process.env.NUXT_USE_CLOUDFLARE === 'true'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const dataDir = join(__dirname, '../data')
-const dbPath = join(dataDir, 'api-keys.json')
-
-let db: ReturnType<typeof JSONFilePreset<ApiKeyData>> | null = null
+let db: any = null
 
 async function getDB() {
   if (db)
     return db
 
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true })
+  if (isCloudflare) {
+    throw new Error('lowdb is not available in Cloudflare mode')
   }
 
-  db = await JSONFilePreset<ApiKeyData>(dbPath, { keys: [] })
+  const fs = await import('node:fs')
+  const path = await import('node:path')
+  const { fileURLToPath } = await import('node:url')
+  const { JSONFilePreset } = await import('lowdb/node')
+
+  const __dirname = path.dirname(fileURLToPath(import.meta.url))
+  const dataDir = path.join(__dirname, '../data')
+  const dbPath = path.join(dataDir, 'api-keys.json')
+
+  if (!fs.default.existsSync(dataDir)) {
+    fs.default.mkdirSync(dataDir, { recursive: true })
+  }
+
+  db = await JSONFilePreset(dbPath, { keys: [] })
   return db
+}
+
+async function getCrypto() {
+  if (isCloudflare) {
+    throw new Error('crypto is not available in local mode functions')
+  }
+  return await import('node:crypto')
 }
 
 export async function createApiKey(name: string, expiresAt?: number): Promise<ApiKey> {
   const database = await getDB()
+  const crypto = await getCrypto()
   const apiKey: ApiKey = {
     id: crypto.randomUUID(),
     key: crypto.randomBytes(32).toString('base64url'),
@@ -53,7 +62,7 @@ export async function createApiKey(name: string, expiresAt?: number): Promise<Ap
 
 export async function getApiKey(key: string): Promise<ApiKey | null> {
   const database = await getDB()
-  const apiKey = database.data.keys.find(k => k.key === key)
+  const apiKey = database.data.keys.find((k: ApiKey) => k.key === key)
 
   if (!apiKey || !apiKey.active)
     return null
@@ -69,7 +78,7 @@ export async function getApiKey(key: string): Promise<ApiKey | null> {
 
 export async function updateApiKey(id: string, updates: Partial<Pick<ApiKey, 'name' | 'active' | 'expiresAt'>>): Promise<ApiKey | null> {
   const database = await getDB()
-  const index = database.data.keys.findIndex(k => k.id === id)
+  const index = database.data.keys.findIndex((k: ApiKey) => k.id === id)
 
   if (index === -1)
     return null
@@ -82,7 +91,7 @@ export async function updateApiKey(id: string, updates: Partial<Pick<ApiKey, 'na
 export async function deleteApiKey(id: string): Promise<boolean> {
   const database = await getDB()
   const initialLength = database.data.keys.length
-  database.data.keys = database.data.keys.filter(k => k.id !== id)
+  database.data.keys = database.data.keys.filter((k: ApiKey) => k.id !== id)
 
   if (database.data.keys.length !== initialLength) {
     await database.write()
@@ -94,12 +103,12 @@ export async function deleteApiKey(id: string): Promise<boolean> {
 
 export async function listApiKeys(): Promise<ApiKey[]> {
   const database = await getDB()
-  return database.data.keys.filter(k => k.active).sort((a, b) => b.createdAt - a.createdAt)
+  return database.data.keys.filter((k: ApiKey) => k.active).sort((a: ApiKey, b: ApiKey) => b.createdAt - a.createdAt)
 }
 
 export async function updateApiKeyLastUsed(key: string): Promise<void> {
   const database = await getDB()
-  const apiKey = database.data.keys.find(k => k.key === key)
+  const apiKey = database.data.keys.find((k: ApiKey) => k.key === key)
 
   if (apiKey) {
     apiKey.lastUsedAt = Date.now()

@@ -1,8 +1,11 @@
-import { getApiKey, updateApiKeyLastUsed } from '../lowdb/api-keys'
 import { verifyJwt } from '../utils/jwt'
 import { isLocalMode } from '../utils/local-mode'
 
 const BEARER_REGEX = /^Bearer\s+/
+
+async function getApiKeysModule() {
+  return await import('../lowdb/api-keys')
+}
 
 export default eventHandler(async (event) => {
   if (event.path === '/api/login')
@@ -32,16 +35,17 @@ export default eventHandler(async (event) => {
 
   const { siteToken, jwtSecret } = useRuntimeConfig(event)
 
-  if (isLocalMode()) {
+  if (isLocalMode(event)) {
     if (token === siteToken) {
       return
     }
 
-    const decoded = verifyJwt(token, jwtSecret)
+    const decoded = await verifyJwt(token, jwtSecret)
     if (decoded) {
       return
     }
 
+    const { getApiKey, updateApiKeyLastUsed } = await getApiKeysModule()
     const apiKey = await getApiKey(token)
     if (apiKey) {
       await updateApiKeyLastUsed(token)

@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { createApiKey } from '../../lowdb/api-keys'
 
 defineRouteMeta({
   openAPI: {
@@ -29,6 +28,7 @@ const CreateApiKeySchema = z.object({
 
 export default eventHandler(async (event) => {
   const body = await readValidatedBody(event, CreateApiKeySchema.parse)
+  const { createApiKey } = await import('../../lowdb/api-keys')
   const apiKey = await createApiKey(body.name, body.expiresAt)
   setResponseStatus(event, 201)
   return apiKey

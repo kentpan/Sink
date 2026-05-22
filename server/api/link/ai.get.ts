@@ -49,7 +49,7 @@ export default eventHandler(async (event) => {
     url: z.string().url(),
   }).parse)).url
 
-  if (isLocalMode()) {
+  if (isLocalMode(event)) {
     return { slug: fallbackSlug(event, url) }
   }
 

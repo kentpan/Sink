@@ -3,7 +3,6 @@ import { z } from 'zod'
 import { QuerySchema } from '#shared/schemas/query'
 import { generateCsv } from '#shared/utils/csv'
 import { createExportFilename } from '#shared/utils/export-file'
-import { analyticsUseWAE } from '../../lowdb/analytics'
 import { isLocalMode } from '../../utils/local-mode'
 
 const { select } = SqlBricks
@@ -69,7 +68,8 @@ export default eventHandler(async (event) => {
 
   let result: { data?: AccessExportRow[] }
 
-  if (isLocalMode()) {
+  if (isLocalMode(event)) {
+    const { analyticsUseWAE } = await import('../../lowdb/analytics')
     const analyticsResult = await analyticsUseWAE(event, sql)
     const data = analyticsResult.data as Array<{ slug: string, url: string, _sample_interval: number }>
 

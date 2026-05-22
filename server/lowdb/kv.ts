@@ -1,37 +1,34 @@
 import type { z } from 'zod'
 import type { LinkSchema } from '#shared/schemas/link'
-import * as fs from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { JSONFilePreset } from 'lowdb/node'
+
+const isCloudflare = process.env.NODE_ENV === 'production' || process.env.NUXT_USE_CLOUDFLARE === 'true'
 
 type Link = z.infer<typeof LinkSchema>
 
-interface KVEntry {
-  value: Link
-  metadata?: Record<string, unknown>
-  expiration?: number
-}
-
-interface KVData {
-  links: Record<string, KVEntry>
-}
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const dataDir = join(__dirname, '../data')
-const dbPath = join(dataDir, 'kv.json')
-
-let db: ReturnType<typeof JSONFilePreset<KVData>> | null = null
+let db: any = null
 
 async function getDB() {
   if (db)
     return db
 
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true })
+  if (isCloudflare) {
+    throw new Error('lowdb is not available in Cloudflare mode')
   }
 
-  db = await JSONFilePreset<KVData>(dbPath, { links: {} })
+  const fs = await import('node:fs')
+  const path = await import('node:path')
+  const { fileURLToPath } = await import('node:url')
+  const { JSONFilePreset } = await import('lowdb/node')
+
+  const __dirname = path.dirname(fileURLToPath(import.meta.url))
+  const dataDir = path.join(__dirname, '../data')
+  const dbPath = path.join(dataDir, 'kv.json')
+
+  if (!fs.default.existsSync(dataDir)) {
+    fs.default.mkdirSync(dataDir, { recursive: true })
+  }
+
+  db = await JSONFilePreset(dbPath, { links: {} })
   return db
 }
 

@@ -12,7 +12,7 @@ defineRouteMeta({
 })
 
 export default eventHandler((event) => {
-  if (isLocalMode()) {
+  if (isLocalMode(event)) {
     return {
       latitude: 31.2304,
       longitude: 121.4737,

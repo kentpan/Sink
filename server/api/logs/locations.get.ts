@@ -17,7 +17,7 @@ function query2sql(query: Query, event: H3Event): string {
 }
 
 export default eventHandler(async (event) => {
-  if (isLocalMode()) {
+  if (isLocalMode(event)) {
     return mockLocations
   }
 

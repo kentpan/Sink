@@ -1,5 +1,3 @@
-import { deleteApiKey } from '../../lowdb/api-keys'
-
 defineRouteMeta({
   openAPI: {
     description: 'Delete an API key',
@@ -17,6 +15,7 @@ defineRouteMeta({
 
 export default eventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
+  const { deleteApiKey } = await import('../../lowdb/api-keys')
   const deleted = await deleteApiKey(id!)
 
   if (!deleted) {

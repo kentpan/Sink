@@ -26,7 +26,7 @@ defineRouteMeta({
 })
 
 export default eventHandler(async (event) => {
-  if (isLocalMode()) {
+  if (isLocalMode(event)) {
     throw createError({
       status: 501,
       statusText: 'Image upload not available in local development mode',

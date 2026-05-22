@@ -68,7 +68,7 @@ export default eventHandler(async (event) => {
   }).parse)
   const { url } = query
 
-  if (isLocalMode()) {
+  if (isLocalMode(event)) {
     return fallbackMetadata(url)
   }
 

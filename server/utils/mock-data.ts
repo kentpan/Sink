@@ -21,29 +21,31 @@ export const mockMetrics = [
   { name: 'Firefox', count: 200 },
 ]
 
-export const mockEvents = [
-  {
-    slug: 'test',
-    url: 'https://example.com',
-    ua: 'Mozilla/5.0',
-    referer: 'google.com',
-    country: 'US',
-    region: 'CA',
-    city: 'San Francisco',
-    timezone: 'America/Los_Angeles',
-    language: 'en',
-    os: 'macOS',
-    browser: 'Chrome',
-    browserType: 'browser',
-    device: 'MacBook',
-    deviceType: 'desktop',
-    COLO: 'SFO',
-    latitude: 37.7749,
-    longitude: -122.4194,
-    id: crypto.randomUUID(),
-    timestamp: Date.now() / 1000,
-  },
-]
+export function getMockEvents() {
+  return [
+    {
+      slug: 'test',
+      url: 'https://example.com',
+      ua: 'Mozilla/5.0',
+      referer: 'google.com',
+      country: 'US',
+      region: 'CA',
+      city: 'San Francisco',
+      timezone: 'America/Los_Angeles',
+      language: 'en',
+      os: 'macOS',
+      browser: 'Chrome',
+      browserType: 'browser',
+      device: 'MacBook',
+      deviceType: 'desktop',
+      COLO: 'SFO',
+      latitude: 37.7749,
+      longitude: -122.4194,
+      id: crypto.randomUUID(),
+      timestamp: Date.now() / 1000,
+    },
+  ]
+}
 
 export const mockLocations = [
   { region: 'US-CA', latitude: 37.7749, longitude: -122.4194, count: 100 },

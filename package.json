@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "nuxt dev",
+    "dev:cf": "NUXT_USE_CLOUDFLARE=true nuxt dev",
     "analyze": "nuxt analyze",
     "test": "vitest",
     "build": "NODE_OPTIONS=--max-old-space-size=8192 nuxt build",
@@ -66,6 +67,7 @@
     "fuse.js": "^7.1.0",
     "intl-parse-accept-language": "^1.0.0",
     "lint-staged": "^16.2.7",
+    "lowdb": "^7.0.1",
     "lucide-vue-next": "^0.563.0",
     "mysql-bricks": "^2.0.0",
     "nanoid": "^5.1.6",
@@ -93,8 +95,7 @@
     "vue-tsc": "^3.2.4",
     "vue3-simple-icons": "^15.6.0",
     "wrangler": "^4.62.0",
-    "zod": "^3.25.76",
-    "lowdb": "^7.0.1"
+    "zod": "^3.25.76"
   },
   "simple-git-hooks": {
     "pre-commit": "npm run lint-staged"

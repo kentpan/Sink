@@ -7,7 +7,7 @@ defineRouteMeta({
 })
 
 export default eventHandler((event) => {
-  if (!isLocalMode()) {
+  if (!isLocalMode(event)) {
     throw createError({ status: 501, statusText: 'GitHub OAuth not available in Cloudflare mode' })
   }
 

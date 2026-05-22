@@ -8,7 +8,7 @@ defineRouteMeta({
 })
 
 export default eventHandler(async (event) => {
-  if (isLocalMode()) {
+  if (isLocalMode(event)) {
     throw createError({
       status: 501,
       statusText: 'Backup not available in local development mode',

@@ -1,8 +1,11 @@
-import { getUserById } from '../../lowdb/users'
 import { verifyJwt } from '../../utils/jwt'
 import { isLocalMode } from '../../utils/local-mode'
 
 const BEARER_REGEX = /^Bearer\s+/
+
+async function getUsersModule() {
+  return await import('../../lowdb/users')
+}
 
 defineRouteMeta({
   openAPI: {
@@ -19,9 +22,10 @@ export default eventHandler(async (event) => {
 
   const { jwtSecret } = useRuntimeConfig(event)
 
-  if (isLocalMode()) {
-    const decoded = verifyJwt(token, jwtSecret)
+  if (isLocalMode(event)) {
+    const decoded = await verifyJwt(token, jwtSecret)
     if (decoded && decoded.sub) {
+      const { getUserById } = await getUsersModule()
       const user = await getUserById(decoded.sub)
       if (user) {
         return {

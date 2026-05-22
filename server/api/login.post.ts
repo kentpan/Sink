@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { generateJwt } from '../utils/jwt'
-import { isLocalMode } from '../utils/local-mode'
+import { isCloudflareWorker, isLocalMode } from '../utils/local-mode'
 
 defineRouteMeta({
   openAPI: {
@@ -45,20 +45,26 @@ const LoginSchema = z.object({
 })
 
 export default eventHandler(async (event) => {
-  const { loginPassword, jwtSecret } = useRuntimeConfig(event)
+  const { loginPassword, jwtSecret, siteToken } = useRuntimeConfig(event)
 
   const body = await readValidatedBody(event, LoginSchema.parse)
 
-  if (body.password === loginPassword) {
-    if (isLocalMode()) {
+  if (isCloudflareWorker(event)) {
+    if (body.password === siteToken) {
+      return { token: siteToken }
+    }
+    throw createError({ status: 401, statusText: 'Incorrect password' })
+  }
+
+  if (isLocalMode(event)) {
+    if (body.password === loginPassword) {
       const expiresInMinutes = 60 * 24
-      const token = generateJwt({ sub: 'admin' }, jwtSecret, expiresInMinutes)
+      const token = await generateJwt({ sub: 'admin' }, jwtSecret, expiresInMinutes)
       const expiresAt = Math.floor(Date.now() / 1000) + (expiresInMinutes * 60)
 
       return { token, expiresAt }
     }
-
-    return { token: useRuntimeConfig(event).siteToken }
+    throw createError({ status: 401, statusText: 'Incorrect password' })
   }
 
   throw createError({ status: 401, statusText: 'Incorrect password' })

@@ -1,9 +1,3 @@
-import crypto from 'node:crypto'
-import * as fs from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { JSONFilePreset } from 'lowdb/node'
-
 interface User {
   id: string
   githubId: string
@@ -15,31 +9,45 @@ interface User {
   lastLoginAt: number
 }
 
-interface UserData {
-  users: User[]
-}
+const isCloudflare = process.env.NODE_ENV === 'production' || process.env.NUXT_USE_CLOUDFLARE === 'true'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const dataDir = join(__dirname, '../data')
-const dbPath = join(dataDir, 'users.json')
-
-let db: ReturnType<typeof JSONFilePreset<UserData>> | null = null
+let db: any = null
 
 async function getDB() {
   if (db)
     return db
 
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true })
+  if (isCloudflare) {
+    throw new Error('lowdb is not available in Cloudflare mode')
   }
 
-  db = await JSONFilePreset<UserData>(dbPath, { users: [] }) as unknown as ReturnType<typeof JSONFilePreset<UserData>>
+  const fs = await import('node:fs')
+  const path = await import('node:path')
+  const { fileURLToPath } = await import('node:url')
+  const { JSONFilePreset } = await import('lowdb/node')
+
+  const __dirname = path.dirname(fileURLToPath(import.meta.url))
+  const dataDir = path.join(__dirname, '../data')
+  const dbPath = path.join(dataDir, 'users.json')
+
+  if (!fs.default.existsSync(dataDir)) {
+    fs.default.mkdirSync(dataDir, { recursive: true })
+  }
+
+  db = await JSONFilePreset(dbPath, { users: [] })
   return db
+}
+
+async function getCrypto() {
+  if (isCloudflare) {
+    throw new Error('crypto is not available in local mode functions')
+  }
+  return await import('node:crypto')
 }
 
 export async function getUserByGithubId(githubId: string): Promise<User | null> {
   const database = await getDB()
-  return database.data.users.find(u => u.githubId === githubId) || null
+  return database.data.users.find((u: User) => u.githubId === githubId) || null
 }
 
 export async function createOrUpdateUser(githubData: {
@@ -50,7 +58,8 @@ export async function createOrUpdateUser(githubData: {
   avatar_url: string
 }): Promise<User> {
   const database = await getDB()
-  const existingUser = database.data.users.find(u => u.githubId === githubData.id)
+  const crypto = await getCrypto()
+  const existingUser = database.data.users.find((u: User) => u.githubId === githubData.id)
 
   if (existingUser) {
     existingUser.githubLogin = githubData.login
@@ -82,5 +91,5 @@ export async function createOrUpdateUser(githubData: {
 
 export async function getUserById(id: string): Promise<User | null> {
   const database = await getDB()
-  return database.data.users.find(u => u.id === id) || null
+  return database.data.users.find((u: User) => u.id === id) || null
 }
