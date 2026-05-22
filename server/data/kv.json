@@ -1,0 +1,19 @@
+{
+  "links": {
+    "link:v79aw": {
+      "value": {
+        "id": "7zj6s9a8de",
+        "url": "https://xubaoge.com",
+        "slug": "v79aw",
+        "createdAt": 1779434011,
+        "updatedAt": 1779434040,
+        "cloaking": false,
+        "redirectWithQuery": false,
+        "unsafe": false
+      },
+      "metadata": {
+        "url": "https://xubaoge.com"
+      }
+    }
+  }
+}

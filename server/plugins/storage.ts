@@ -8,11 +8,11 @@ export default defineNitroPlugin(async (nitroApp) => {
   try {
     const fs = await import('node:fs')
     const path = await import('node:path')
-    const { fileURLToPath } = await import('node:url')
+
     const { JSONFilePreset } = await import('lowdb/node')
 
-    const __dirname = path.dirname(fileURLToPath(import.meta.url))
-    const dataDir = path.join(__dirname, '../data')
+    const projectRoot = process.cwd()
+    const dataDir = path.join(projectRoot, 'server/data')
 
     if (!fs.default.existsSync(dataDir)) {
       fs.default.mkdirSync(dataDir, { recursive: true })
@@ -140,7 +140,7 @@ export default defineNitroPlugin(async (nitroApp) => {
     })
 
     storage.defineDriver('lowdb-r2', async () => {
-      const r2Dir = path.join(dataDir, 'r2')
+      const r2Dir = path.join(dataDir, 'r2-files')
       if (!fs.default.existsSync(r2Dir)) {
         fs.default.mkdirSync(r2Dir, { recursive: true })
       }

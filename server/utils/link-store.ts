@@ -108,7 +108,7 @@ export async function listLinks(event: H3Event, options: ListLinksOptions): Prom
         const { metadata, value: link } = await KV.getWithMetadata(key.name, { type: 'json' }) as { metadata: Record<string, unknown> | null, value: Link | null }
         if (link) {
           return {
-            ...(metadata ?? {}),
+            ...(metadata || {}),
             ...link,
           }
         }

@@ -81,7 +81,7 @@ export async function listApiKeys(): Promise<ApiKey[]> {
     const data = await storage.getItem(id)
     if (!data)
       continue
-    const apiKey = JSON.parse(data as string) as ApiKey
+    const apiKey: ApiKey = typeof data === 'string' ? JSON.parse(data) as ApiKey : (data as ApiKey)
     if (apiKey.active)
       apiKeys.push(apiKey)
   }
@@ -97,7 +97,7 @@ export async function updateApiKeyLastUsed(key: string): Promise<void> {
     const data = await storage.getItem(id)
     if (!data)
       continue
-    const apiKey = JSON.parse(data as string) as ApiKey
+    const apiKey: ApiKey = typeof data === 'string' ? JSON.parse(data) as ApiKey : (data as ApiKey)
     if (apiKey.key === key) {
       apiKey.lastUsedAt = Date.now()
       await storage.setItem(id, JSON.stringify(apiKey))

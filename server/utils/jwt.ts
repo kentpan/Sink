@@ -104,9 +104,10 @@ export async function generateApiKey(): Promise<string> {
   const { crypto } = await getCrypto()
 
   if (typeof globalThis.crypto !== 'undefined' && typeof crypto.getRandomValues !== 'undefined') {
-    const array = new Uint8Array(32);
-    (crypto as Crypto).getRandomValues(array)
-    return Array.from(array).map(b => String.fromCharCode(b)).join('').replace(BASE64URL_REGEX, c => ({ '+': '-', '/': '_', '=': '' }[c] || c))
+    const array = new Uint8Array(32)
+    ;(crypto as Crypto).getRandomValues(array)
+    const base64 = btoa(String.fromCharCode(...array))
+    return base64.replace(BASE64URL_REGEX, c => ({ '+': '-', '/': '_', '=': '' }[c] || c))
   }
   const nodeCrypto = await import('node:crypto')
   return nodeCrypto.randomBytes(32).toString('base64url')

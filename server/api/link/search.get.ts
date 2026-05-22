@@ -37,7 +37,7 @@ export default eventHandler(async (event: H3Event) => {
 
       while (true) {
         const result = await KV.list({
-          prefix: `link:`,
+          prefix: 'link:',
           limit: 1000,
           cursor: finalCursor,
         }) as { keys: Array<{ name: string, metadata?: LinkMetadata }>, list_complete: boolean, cursor?: string }
@@ -65,7 +65,7 @@ export default eventHandler(async (event: H3Event) => {
                   await KV.put(key.name, JSON.stringify(link), {
                     expiration: metadata?.expiration,
                     metadata: {
-                      ...(metadata ?? {}),
+                      ...(metadata || {}),
                       url: withoutQuery(link.url),
                       comment: link.comment,
                     },
@@ -112,7 +112,7 @@ export default eventHandler(async (event: H3Event) => {
             await storage.setItem(keyName, JSON.stringify({
               ...entry,
               metadata: {
-                ...(entry.metadata ?? {}),
+                ...(entry.metadata || {}),
                 url: withoutQuery(entry.value.url),
                 comment: entry.value.comment,
               },

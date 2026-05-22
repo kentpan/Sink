@@ -15,7 +15,7 @@ import { parseURL } from 'ufo'
 import { getFlag } from '@/utils/flag'
 import { isCloudflareEnv } from './env'
 
-const NON_DIGIT_REGEX = /\D/g
+const NON_DIGIT_REGEX = /\D+/g
 
 function toBlobNumber(blob: string) {
   return +blob.replace(NON_DIGIT_REGEX, '')
@@ -63,13 +63,13 @@ export const logsMap = Object.fromEntries([
   ...Object.entries(doublesMap).map(([k, v]) => [v, k]),
 ]) as LogsMap
 
-export function logs2blobs(logs: LogsMap) {
+export function logs2Blobs(logs: LogsMap) {
   return (Object.keys(blobsMap) as BlobsKey[])
     .sort((a, b) => toBlobNumber(a) - toBlobNumber(b))
     .map(key => String(logs[blobsMap[key] as LogsKey] || ''))
 }
 
-export function blobs2logs(blobs: string[]) {
+export function blobs2Logs(blobs: string[]) {
   const logsList = Object.keys(blobsMap)
 
   return blobs.reduce((logs, blob, i) => {
@@ -79,13 +79,13 @@ export function blobs2logs(blobs: string[]) {
   }, {} as Partial<LogsMap>)
 }
 
-export function logs2doubles(logs: LogsMap) {
+export function logs2Doubles(logs: LogsMap) {
   return (Object.keys(doublesMap) as DoublesKey[])
     .sort((a, b) => toBlobNumber(a) - toBlobNumber(b))
     .map(key => Number(logs[doublesMap[key] as LogsKey] || 0))
 }
 
-export function doubles2logs(doubles: number[]) {
+export function doubles2Logs(doubles: number[]) {
   const logsList = Object.keys(doublesMap)
 
   return doubles.reduce((logs, double, i) => {
@@ -105,10 +105,8 @@ export async function useAccessLog(event: H3Event) {
 
   const userAgent = getHeader(event, 'user-agent') || ''
   const uaInfo = (new UAParser(userAgent, {
-
     // @ts-expect-error
     browser: [Crawlers.browser || [], CLIs.browser || [], Emails.browser || [], Fetchers.browser || [], InApps.browser || [], MediaPlayers.browser || [], Vehicles.browser || []].flat(),
-
     // @ts-expect-error
     device: [ExtraDevices.device || []].flat(),
   })).getResult()
@@ -156,16 +154,16 @@ export async function useAccessLog(event: H3Event) {
   if (isCloudflareEnv() && env?.ANALYTICS) {
     return env.ANALYTICS.writeDataPoint({
       indexes: [link.id],
-      blobs: logs2blobs(accessLogs),
-      doubles: logs2doubles(accessLogs),
+      blobs: logs2Blobs(accessLogs),
+      doubles: logs2Doubles(accessLogs),
     })
   }
 
   const storage = useStorage('analytics')
   await storage.setItem(`${Date.now()}-${Math.random().toString(36).slice(2)}`, JSON.stringify({
     indexes: [link.id || ''],
-    blobs: logs2blobs(accessLogs),
-    doubles: logs2doubles(accessLogs),
+    blobs: logs2Blobs(accessLogs),
+    doubles: logs2Doubles(accessLogs),
     timestamp: Date.now(),
   }))
 
